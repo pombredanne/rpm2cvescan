@@ -1,0 +1,67 @@
+rpm2cvescan
+
+rpm2cvescan is an offline rpm cve vulnerability scanner based on 
+  * RedHat's rpm-to-cve.xml
+  * RedHat's OVAL com.redhat.rhsa-all.xml
+
+
+How does this work?
+  Based on these 2 xml files we can create a memory structure associated
+  with an rpm. Each package entry will have an array of vulnerability attributes
+  like cve and cve score.
+
+  We will get an inventory of the server by running a command that will list
+  all installed packages:
+      "/bin/rpm -qa --qf '%{N}-%{epochnum}:%{V}-%{R}\n' | /bin/sort | /usr/bin/uniq"
+
+  Finally, we will loop through the memory structure and print info ( package name,
+  cve ID and score) on screen.
+
+
+How to run the scanner:
+  * install package dependencies using: 
+       # yum -y install perl-XML-Simple 
+  * download above xml files to be sure you have the latest revision
+       # /usr/bin/wget -N "https://www.redhat.com/security/data/oval/com.redhat.rhsa-all.xml"
+       # /usr/bin/wget -N "https://www.redhat.com/security/data/metrics/rpm-to-cve.xml"
+  * run the perl program:
+       # perl rpm2cvescan.pl
+
+
+Output example:
+
+=====  openssh-0:5.3p1-117.el6  =====
+CVE-2015-6563                                               6.2
+CVE-2015-6564                                               4.0
+CVE-2015-5352                                               4.9
+CVE-2016-1908                                               4.9
+
+=====  openssh-clients-0:5.3p1-117.el6  =====
+CVE-2015-6563                                               6.2
+CVE-2015-6564                                               4.0
+CVE-2015-5352                                               4.9
+CVE-2016-1908                                               4.9
+
+=====  sqlite-0:3.6.20-1.el6_7.2  =====
+CVE-2015-3416                                               3.7
+
+
+TOTAL RPM_PACKAGES 876 VULN_PACKAGES 47 VULN_CVEs 243 VULN_HIGHRISK 4
+
+
+
+
+TODO:
+
+  * sending rpm package list to a web API using JSON format:
+
+    $ export PACKAGES=$(rpm -qa --queryformat='%{N}-%{epochnum}:%{V}-%{R}\n' | sed 's/^/\"/; s/$/\"/;' | tr '\n' ',' | sed 's/.$//')
+    $ export JSON="{\"os\":\"centos\",\"package\":[ ${PACKAGES} ],\"version\":\"6\"}"
+    $ echo $JSON | /usr/bin/curl -sk -H "Accept: application/json" -X POST -d "@-" "https://my.web.api/v1/"
+
+  * creating the PHP API using Slim2 framework
+
+  * generating a unique URL for each server sending the data
+
+  * creating a web frontend to view each server's vuln data
+
